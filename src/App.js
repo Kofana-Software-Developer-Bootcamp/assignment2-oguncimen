@@ -9,6 +9,7 @@ function App() {
   const [result, setResult] = useState(0);
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
+  //set the form values for errors
   const setField = (field, value) => {
     setForm({
       ...form,
@@ -16,6 +17,7 @@ function App() {
     });
   };
   const calculate = (e) => {
+    //stop the form from submitting
     e.preventDefault();
     // get our new errors
     const newErrors = findFormErrors();
@@ -24,7 +26,9 @@ function App() {
       // We got errors!
       setErrors(newErrors);
     } else {
+      // No errors!
       setErrors({});
+      // Do the calculation
       var myHeaders = new Headers();
       myHeaders.append("Content-Type", "text/xml; charset=utf-8");
       myHeaders.append("SOAPAction", `http://tempuri.org/${operation}`);
@@ -42,25 +46,31 @@ function App() {
         body: raw,
         redirect: "follow",
       };
-
+      //send request to server
       fetch(
-        "http://localhost:8000/http://www.dneonline.com/calculator.asmx",
+        "http://localhost:8080/http://www.dneonline.com/calculator.asmx",
         requestOptions
       )
         .then((response) => response.text())
         .then((result) => {
+          //parse the result
           var parser = new DOMParser();
           var xmlDoc = parser.parseFromString(result, "text/xml");
+          //get the result
           var x = xmlDoc.getElementsByTagName(`${operation}Result`)[0]
             .childNodes[0].nodeValue;
+          //set the result
           setResult(x);
         })
         .catch((error) => console.log("error", error));
     }
   };
+  // Finds errors in the form
   const findFormErrors = () => {
     const { number1, number2 } = form;
+    // Create an empty errors object
     const newErrors = {};
+    // Check if the number1 is not a number or empty
     if (!number1 || number1 === "") newErrors.number1 = "Required!";
     // food errors
     if (!number2 || number2 === "") newErrors.number2 = "Required!";
@@ -91,7 +101,9 @@ function App() {
                   type="number"
                   placeholder="Enter number two"
                   onChange={(value) => {
+                    //set the value
                     setIntB(value.target.value);
+                    //set the field for errors
                     setField("number2", value.target.value);
                   }}
                 />
@@ -102,7 +114,9 @@ function App() {
               <FloatingLabel label="Select operation">
                 <Form.Select
                   aria-label="Default select example"
+                  //destructuring
                   onChange={({ target }) => {
+                    //set the operation
                     setOperation(target.value);
                   }}
                 >
