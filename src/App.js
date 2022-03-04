@@ -1,25 +1,34 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import { useState } from "react";
-import {
-  Button,
-  Form,
-  Row,
-  Col,
-  FloatingLabel,
-  ButtonGroup,
-} from "react-bootstrap";
+import { Button, Form, Row, Col, FloatingLabel } from "react-bootstrap";
 function App() {
   const [intA, setIntA] = useState(0);
   const [intB, setIntB] = useState(0);
   const [operation, setOperation] = useState("Add");
   const [result, setResult] = useState(0);
-
-  const calculate = () => {
-    var myHeaders = new Headers();
-    myHeaders.append("Content-Type", "text/xml; charset=utf-8");
-    myHeaders.append("SOAPAction", `http://tempuri.org/${operation}`);
-    var raw = `<?xml version="1.0" encoding="utf-8"?>
+  const [form, setForm] = useState({});
+  const [errors, setErrors] = useState({});
+  const setField = (field, value) => {
+    setForm({
+      ...form,
+      [field]: value,
+    });
+  };
+  const calculate = (e) => {
+    e.preventDefault();
+    // get our new errors
+    const newErrors = findFormErrors();
+    // Conditional logic:
+    if (Object.keys(newErrors).length > 0) {
+      // We got errors!
+      setErrors(newErrors);
+    } else {
+      setErrors({});
+      var myHeaders = new Headers();
+      myHeaders.append("Content-Type", "text/xml; charset=utf-8");
+      myHeaders.append("SOAPAction", `http://tempuri.org/${operation}`);
+      var raw = `<?xml version="1.0" encoding="utf-8"?>
         <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
           <soap:Body>\n    <${operation} xmlns="http://tempuri.org/">
             <intA>${intA}</intA>
@@ -27,26 +36,36 @@ function App() {
             </${operation}> 
             </soap:Body></soap:Envelope>`;
 
-    var requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: raw,
-      redirect: "follow",
-    };
+      var requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow",
+      };
 
-    fetch(
-      "http://localhost:8000/http://www.dneonline.com/calculator.asmx",
-      requestOptions
-    )
-      .then((response) => response.text())
-      .then((result) => {
-        var parser = new DOMParser();
-        var xmlDoc = parser.parseFromString(result, "text/xml");
-        var x = xmlDoc.getElementsByTagName(`${operation}Result`)[0]
-          .childNodes[0].nodeValue;
-        setResult(x);
-      })
-      .catch((error) => console.log("error", error));
+      fetch(
+        "http://localhost:8000/http://www.dneonline.com/calculator.asmx",
+        requestOptions
+      )
+        .then((response) => response.text())
+        .then((result) => {
+          var parser = new DOMParser();
+          var xmlDoc = parser.parseFromString(result, "text/xml");
+          var x = xmlDoc.getElementsByTagName(`${operation}Result`)[0]
+            .childNodes[0].nodeValue;
+          setResult(x);
+        })
+        .catch((error) => console.log("error", error));
+    }
+  };
+  const findFormErrors = () => {
+    const { number1, number2 } = form;
+    const newErrors = {};
+    if (!number1 || number1 === "") newErrors.number1 = "Required!";
+    // food errors
+    if (!number2 || number2 === "") newErrors.number2 = "Required!";
+    // rating errors
+    return newErrors;
   };
   return (
     <div className="App">
@@ -60,9 +79,11 @@ function App() {
                   placeholder="Enter number one"
                   onChange={(value) => {
                     setIntA(value.target.value);
+                    setField("number1", value.target.value);
                   }}
                 />
               </FloatingLabel>
+              <Form.Label className="errorLabels">{errors.number1}</Form.Label>
             </Col>
             <Col>
               <FloatingLabel label="Number two">
@@ -71,12 +92,14 @@ function App() {
                   placeholder="Enter number two"
                   onChange={(value) => {
                     setIntB(value.target.value);
+                    setField("number2", value.target.value);
                   }}
                 />
               </FloatingLabel>
+              <Form.Label className="errorLabels">{errors.number2}</Form.Label>
             </Col>
             <Col>
-              <FloatingLabel label="Select operator">
+              <FloatingLabel label="Select operation">
                 <Form.Select
                   aria-label="Default select example"
                   onChange={({ target }) => {
@@ -94,7 +117,6 @@ function App() {
               <Button
                 size="lg"
                 variant="primary"
-                type="button"
                 onClick={calculate}
                 className="calculateButton"
               >
